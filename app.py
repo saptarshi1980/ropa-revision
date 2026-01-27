@@ -168,7 +168,7 @@ if st.button("Generate Arrear Report"):
         ])
 
         st.success(f"✅ Total Arrear: ₹ {total_arrear:,.2f}")
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df, width="100%")
 
         file_name = "arrear_report.xlsx"
         df.to_excel(file_name, index=False)
