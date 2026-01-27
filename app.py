@@ -75,7 +75,7 @@ with col1:
     )
 
 with col2:
-    increment_month = st.selectbox("Increment Month", list(range(1, 13)))
+    increment_month = st.selectbox("Increment Month(1-12)", list(range(1, 13)))
     arrear_upto = st.text_input(
         "Calculate arrear upto (YYYYMM)",
         value="202602"
