@@ -78,7 +78,69 @@ def increment_due(current, increment_month):
 # ==================================================
 
 st.set_page_config(page_title="Salary Arrear Calculator", layout="wide")
-st.title("📊 Salary Arrear Calculator (ROPA-2020 – GP 6600 / 7600)")
+st.markdown(
+    """
+    <style>
+    /* ===========================
+       Main page background
+       =========================== */
+    body {
+        background-color: #f0f8ff;  /* light blue */
+        color: #000000;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* Streamlit main container */
+    .stApp {
+        background-color: #ebdeae;
+    }
+
+    /* ===========================
+       Sidebar styling
+       =========================== */
+    [data-testid="stSidebar"] {
+        background-color: #e0e0e0; /* soft gray */
+        padding: 20px;
+        border-radius: 10px;
+    }
+
+    /* ===========================
+       Widget styling
+       =========================== */
+    .stButton>button {
+        background-color: #4CAF50;  /* green button */
+        color: white;
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-size: 16px;
+    }
+
+    .stTextInput>div>div>input,
+    .stNumberInput>div>div>input,
+    .stSelectbox>div>div>div>div>div {
+        border-radius: 8px;
+        padding: 6px;
+        font-size: 16px;
+    }
+
+    /* ===========================
+       Dataframe and table styling
+       =========================== */
+    .stDataFrame table {
+        background-color: #ffffff; /* white table background */
+        color: #000000;
+        font-size: 14px;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    "<h2 style='text-align: center;'>📊 Salary Arrear Calculator (ROPA-2020 Amendment for GP 6600 & 7600)</h2>",
+    unsafe_allow_html=True
+)
 
 col1, col2 = st.columns(2)
 
@@ -103,7 +165,8 @@ with col2:
 
 promotion_input = st.text_input(
     "Promotion Month (YYYYMM) – Optional",
-    help="On promotion: GP → 7600, Basic resets to 102600"
+    help="On promotion: GP → 7600, Basic resets to 102600",
+    max_chars=6
 )
 
 # ==================================================
