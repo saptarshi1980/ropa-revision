@@ -60,6 +60,20 @@ def find_step(gp, basic):
     raise ValueError(f"❌ Basic {basic} not found in GP {gp} matrix")
 
 # ==================================================
+# ✅ CORRECT INCREMENT RULE (FIX)
+# ==================================================
+
+def increment_due(current, increment_month):
+    """
+    Increment rules under ROPA 2020:
+    - January increment starts from Jan-2021
+    - Feb–Dec increments start from same month in 2020
+    """
+    if increment_month == 1:
+        return current.month == 1 and current.year > 2020
+    return current.month == increment_month and current.year >= 2020
+
+# ==================================================
 # STREAMLIT UI
 # ==================================================
 
@@ -119,11 +133,11 @@ if st.button("Generate Arrear Report"):
             # Promotion
             if promotion_date and current == promotion_date and not promoted:
                 current_gp = 7600
-                step = 0   # 102600
+                step = 0  # 102600
                 promoted = True
 
-            # ✅ Increment effective from this month
-            if current.month == increment_month and current.year > 2020:
+            # ✅ Correct increment application
+            if increment_due(current, increment_month):
                 step = min(step + 1, len(PAY_MATRIX[current_gp]) - 1)
 
             old_basic, new_basic = PAY_MATRIX[current_gp][step]
@@ -156,7 +170,6 @@ if st.button("Generate Arrear Report"):
         st.success(f"✅ Total Arrear: ₹ {total_arrear:,.2f}")
         st.dataframe(df, use_container_width=True)
 
-        # Excel Download
         file_name = "arrear_report.xlsx"
         df.to_excel(file_name, index=False)
 
