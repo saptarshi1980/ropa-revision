@@ -32,7 +32,7 @@ PAY_MATRIX = {
 }
 
 # ==================================================
-# DA HISTORY (CORRECT – DATE BASED)
+# DA HISTORY (DATE-BASED – FINAL)
 # ==================================================
 
 DA_HISTORY = [
@@ -57,13 +57,14 @@ def find_step(gp, basic):
     for i, (old_b, _) in enumerate(PAY_MATRIX[gp]):
         if old_b == basic:
             return i
-    raise ValueError(f"Basic {basic} not found in GP {gp}")
+    raise ValueError(f"❌ Basic {basic} not found in GP {gp} matrix")
 
 # ==================================================
 # STREAMLIT UI
 # ==================================================
 
-st.title("📊 Salary Arrear Calculator (ROPA 2020 Revision for Grade 9 and 10)")
+st.set_page_config(page_title="Salary Arrear Calculator", layout="wide")
+st.title("📊 Salary Arrear Calculator (ROPA-2020 – GP 6600 / 7600)")
 
 col1, col2 = st.columns(2)
 
@@ -71,11 +72,16 @@ with col1:
     initial_gp = st.selectbox("Initial Grade Pay", [6600, 7600])
     initial_basic = st.number_input(
         "Basic Pay as on Jan-2020 (OLD BASIC)",
+        min_value=0,
         step=100
     )
 
 with col2:
-    increment_month = st.selectbox("Increment Month(1-12)", list(range(1, 13)))
+    increment_month = st.selectbox(
+        "Increment Month",
+        list(range(1, 13)),
+        format_func=lambda x: date(2000, x, 1).strftime("%B")
+    )
     arrear_upto = st.text_input(
         "Calculate arrear upto (YYYYMM)",
         value="202602"
@@ -83,7 +89,7 @@ with col2:
 
 promotion_input = st.text_input(
     "Promotion Month (YYYYMM) – Optional",
-    help="On promotion GP becomes 7600 and basic resets to 102600"
+    help="On promotion: GP → 7600, Basic resets to 102600"
 )
 
 # ==================================================
@@ -92,70 +98,74 @@ promotion_input = st.text_input(
 
 if st.button("Generate Arrear Report"):
 
-    start_date = date(2020, 1, 1)
-    end_date = date(int(arrear_upto[:4]), int(arrear_upto[4:]), 1)
+    try:
+        start_date = date(2020, 1, 1)
+        end_date = date(int(arrear_upto[:4]), int(arrear_upto[4:]), 1)
 
-    promotion_date = None
-    if promotion_input.strip():
-        promotion_date = date(int(promotion_input[:4]), int(promotion_input[4:]), 1)
+        promotion_date = None
+        if promotion_input.strip():
+            promotion_date = date(int(promotion_input[:4]), int(promotion_input[4:]), 1)
 
-    current = start_date
-    current_gp = initial_gp
-    step = find_step(current_gp, initial_basic)
-    promoted = False
+        current = start_date
+        current_gp = initial_gp
+        step = find_step(current_gp, initial_basic)
+        promoted = False
 
-    rows = []
-    total_arrear = 0
+        rows = []
+        total_arrear = 0
 
-    while current <= end_date:
+        while current <= end_date:
 
-        # Promotion
-        if promotion_date and current == promotion_date and not promoted:
-            current_gp = 7600
-            step = 0   # 102600 is NEW BASIC at step 0
-            promoted = True
+            # Promotion
+            if promotion_date and current == promotion_date and not promoted:
+                current_gp = 7600
+                step = 0   # 102600
+                promoted = True
 
-        old_basic, new_basic = PAY_MATRIX[current_gp][step]
-        da = get_da(current)
+            # ✅ Increment effective from this month
+            if current.month == increment_month and current.year > 2020:
+                step = min(step + 1, len(PAY_MATRIX[current_gp]) - 1)
 
-        old_salary = round(old_basic * (1 + da), 2)
-        new_salary = round(new_basic * (1 + da), 2)
-        arrear = round(new_salary - old_salary, 2)
+            old_basic, new_basic = PAY_MATRIX[current_gp][step]
+            da = get_da(current)
 
-        total_arrear += arrear
+            old_salary = round(old_basic * (1 + da), 2)
+            new_salary = round(new_basic * (1 + da), 2)
+            arrear = round(new_salary - old_salary, 2)
 
-        rows.append([
-            current.strftime("%b-%Y"),
-            current_gp,
-            old_basic,
-            new_basic,
-            int(da * 100),
-            old_salary,
-            new_salary,
-            arrear
+            total_arrear += arrear
+
+            rows.append([
+                current.strftime("%b-%Y"),
+                current_gp,
+                old_basic,
+                new_basic,
+                int(da * 100),
+                old_salary,
+                new_salary,
+                arrear
+            ])
+
+            current += relativedelta(months=1)
+
+        df = pd.DataFrame(rows, columns=[
+            "Month", "Grade Pay", "Old Basic", "New Basic",
+            "DA %", "Old Basic + DA", "New Basic + DA", "Monthly Arrear"
         ])
 
-        # Increment
-        if current.month == increment_month and current.year > 2020:
-            step = min(step + 1, len(PAY_MATRIX[current_gp]) - 1)
+        st.success(f"✅ Total Arrear: ₹ {total_arrear:,.2f}")
+        st.dataframe(df, use_container_width=True)
 
-        current += relativedelta(months=1)
+        # Excel Download
+        file_name = "arrear_report.xlsx"
+        df.to_excel(file_name, index=False)
 
-    df = pd.DataFrame(rows, columns=[
-        "Month", "Grade Pay", "Old Basic", "New Basic",
-        "DA %", "Old Basic + DA", "New Basic + DA", "Monthly Arrear"
-    ])
+        with open(file_name, "rb") as f:
+            st.download_button(
+                "⬇️ Download Excel Report",
+                f,
+                file_name
+            )
 
-    st.success(f"✅ Total Arrear: ₹ {total_arrear:,.2f}")
-    st.dataframe(df, use_container_width=True)
-
-    # Excel download
-    file_name = "arrear_report.xlsx"
-    df.to_excel(file_name, index=False)
-
-    with open(file_name, "rb") as f:
-        st.download_button(
-            "⬇️ Download Excel Report",
-            f,
-            file_name
-        )
+    except Exception as e:
+        st.error(str(e))
