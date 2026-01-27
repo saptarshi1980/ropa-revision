@@ -32,7 +32,7 @@ PAY_MATRIX = {
 }
 
 # ==================================================
-# DA HISTORY (DATE-BASED – FINAL)
+# DA HISTORY
 # ==================================================
 
 DA_HISTORY = [
@@ -60,15 +60,10 @@ def find_step(gp, basic):
     raise ValueError(f"❌ Basic {basic} not found in GP {gp} matrix")
 
 # ==================================================
-# ✅ CORRECT INCREMENT RULE (FIX)
+# INCREMENT RULE
 # ==================================================
 
 def increment_due(current, increment_month):
-    """
-    Increment rules under ROPA 2020:
-    - January increment starts from Jan-2021
-    - Feb–Dec increments start from same month in 2020
-    """
     if increment_month == 1:
         return current.month == 1 and current.year > 2020
     return current.month == increment_month and current.year >= 2020
@@ -78,67 +73,9 @@ def increment_due(current, increment_month):
 # ==================================================
 
 st.set_page_config(page_title="Salary Arrear Calculator", layout="wide")
-st.markdown(
-    """
-    <style>
-    /* ===========================
-       Main page background
-       =========================== */
-    body {
-        background-color: #f0f8ff;  /* light blue */
-        color: #000000;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    /* Streamlit main container */
-    .stApp {
-        background-color: #ebdeae;
-    }
-
-    /* ===========================
-       Sidebar styling
-       =========================== */
-    [data-testid="stSidebar"] {
-        background-color: #e0e0e0; /* soft gray */
-        padding: 20px;
-        border-radius: 10px;
-    }
-
-    /* ===========================
-       Widget styling
-       =========================== */
-    .stButton>button {
-        background-color: #4CAF50;  /* green button */
-        color: white;
-        border-radius: 8px;
-        padding: 8px 16px;
-        font-size: 16px;
-    }
-
-    .stTextInput>div>div>input,
-    .stNumberInput>div>div>input,
-    .stSelectbox>div>div>div>div>div {
-        border-radius: 8px;
-        padding: 6px;
-        font-size: 16px;
-    }
-
-    /* ===========================
-       Dataframe and table styling
-       =========================== */
-    .stDataFrame table {
-        background-color: #ffffff; /* white table background */
-        color: #000000;
-        font-size: 14px;
-    }
-
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 
 st.markdown(
-    "<h2 style='text-align: center;'>📊 Salary Arrear Calculator (ROPA-2020 Amendment for GP 6600 & 7600)</h2>",
+    "<h2 style='text-align:center;'>📊 Salary Arrear Calculator (ROPA-2020 – GP 6600 & 7600)</h2>",
     unsafe_allow_html=True
 )
 
@@ -158,10 +95,7 @@ with col2:
         list(range(1, 13)),
         format_func=lambda x: date(2000, x, 1).strftime("%B")
     )
-    arrear_upto = st.text_input(
-        "Calculate arrear upto (YYYYMM)",
-        value="202602"
-    )
+    arrear_upto = st.text_input("Calculate arrear upto (YYYYMM)", value="202602")
 
 promotion_input = st.text_input(
     "Promotion Month (YYYYMM) – Optional",
@@ -193,14 +127,17 @@ if st.button("Generate Arrear Report"):
 
         while current <= end_date:
 
-            # Promotion
+            promotion_this_month = False
+
+            # ================= Promotion =================
             if promotion_date and current == promotion_date and not promoted:
                 current_gp = 7600
-                step = 0  # 102600
+                step = 0                 # FIXATION ONLY
                 promoted = True
+                promotion_this_month = True
 
-            # ✅ Correct increment application
-            if increment_due(current, increment_month):
+            # ================= Increment =================
+            if not promotion_this_month and increment_due(current, increment_month):
                 step = min(step + 1, len(PAY_MATRIX[current_gp]) - 1)
 
             old_basic, new_basic = PAY_MATRIX[current_gp][step]
@@ -233,15 +170,9 @@ if st.button("Generate Arrear Report"):
         st.success(f"✅ Total Arrear: ₹ {total_arrear:,.2f}")
         st.dataframe(df, width="stretch")
 
-        file_name = "arrear_report.xlsx"
-        df.to_excel(file_name, index=False)
-
-        with open(file_name, "rb") as f:
-            st.download_button(
-                "⬇️ Download Excel Report",
-                f,
-                file_name
-            )
+        df.to_excel("arrear_report.xlsx", index=False)
+        with open("arrear_report.xlsx", "rb") as f:
+            st.download_button("⬇️ Download Excel Report", f, "arrear_report.xlsx")
 
     except Exception as e:
         st.error(str(e))
