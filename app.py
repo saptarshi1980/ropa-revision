@@ -57,7 +57,10 @@ def find_step(gp, basic):
     for i, (old_b, _) in enumerate(PAY_MATRIX[gp]):
         if old_b == basic:
             return i
-    raise ValueError(f"❌ Basic {basic} not found in GP {gp} matrix")
+    raise ValueError(f"Basic {basic} not found in GP {gp}")
+
+def get_old_basics(gp):
+    return [old for (old, _) in PAY_MATRIX[gp]]
 
 # ==================================================
 # INCREMENT RULE
@@ -82,11 +85,12 @@ st.markdown(
 col1, col2 = st.columns(2)
 
 with col1:
-    initial_gp = st.selectbox("Initial Grade Pay", [6600, 7600])
-    initial_basic = st.number_input(
+    initial_gp = st.selectbox("Initial Grade Pay as on Jan-2020", [6600, 7600])
+
+    initial_basic = st.selectbox(
         "Basic Pay as on Jan-2020 (OLD BASIC)",
-        min_value=0,
-        step=100
+        get_old_basics(initial_gp),
+        format_func=lambda x: f"₹ {x:,.0f}"
     )
 
 with col2:
@@ -95,6 +99,7 @@ with col2:
         list(range(1, 13)),
         format_func=lambda x: date(2000, x, 1).strftime("%B")
     )
+
     arrear_upto = st.text_input("Calculate arrear upto (YYYYMM)", value="202602")
 
 promotion_input = st.text_input(
@@ -129,14 +134,14 @@ if st.button("Generate Arrear Report"):
 
             promotion_this_month = False
 
-            # ================= Promotion =================
+            # ===== Promotion =====
             if promotion_date and current == promotion_date and not promoted:
                 current_gp = 7600
-                step = 0                 # FIXATION ONLY
+                step = 0      # fixation only
                 promoted = True
                 promotion_this_month = True
 
-            # ================= Increment =================
+            # ===== Increment =====
             if not promotion_this_month and increment_due(current, increment_month):
                 step = min(step + 1, len(PAY_MATRIX[current_gp]) - 1)
 
@@ -175,4 +180,4 @@ if st.button("Generate Arrear Report"):
             st.download_button("⬇️ Download Excel Report", f, "arrear_report.xlsx")
 
     except Exception as e:
-        st.error(str(e))
+        st.error(f"❌ {str(e)}")
