@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import date
 from dateutil.relativedelta import relativedelta
+import matplotlib.pyplot as plt
 
 # ==================================================
 # PAY MATRICES (Old, New)
@@ -43,6 +44,44 @@ DA_HISTORY = [
     (date(2024, 4, 1), 0.24),
     (date(2025, 4, 1), 0.28),
 ]
+
+def generate_pay_matrix_image(gp):
+    matrix = PAY_MATRIX[gp]
+
+    df = pd.DataFrame(matrix, columns=[
+        "Pre-Revised Basic",
+        "Revised Basic"
+    ])
+
+    df.index = range(1, len(df) + 1)
+    df.insert(0, "Level", df.index)
+
+    fig, ax = plt.subplots(figsize=(6, 0.5 * len(df) + 1))
+    ax.axis('off')
+
+    table = ax.table(
+        cellText=df.values,
+        colLabels=df.columns,
+        cellLoc='center',
+        loc='center'
+    )
+
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.scale(1, 1.5)
+
+    for (row, col), cell in table.get_celld().items():
+        if row == 0:
+            cell.set_text_props(weight='bold')
+            cell.set_facecolor('#E8E8E8')
+
+    plt.title(f"Revised Pay Matrix – GP {gp}", fontsize=14, weight='bold', pad=12)
+
+    filename = f"pay_matrix_gp_{gp}.png"
+    plt.savefig(filename, dpi=200, bbox_inches="tight")
+    plt.close()
+
+    return filename
 
 def get_da(d):
     da = DA_HISTORY[0][1]
@@ -181,3 +220,33 @@ if st.button("Generate Arrear Report"):
 
     except Exception as e:
         st.error(f"❌ {str(e)}")
+
+
+
+st.markdown("### 📷 Download Revised Pay Matrix")
+
+colA, colB = st.columns(2)
+
+with colA:
+    if st.button("Download GP 6600 Pay Matrix"):
+        img_6600 = generate_pay_matrix_image(6600)
+        with open(img_6600, "rb") as f:
+            st.download_button(
+                "⬇️ Download GP 6600 Image",
+                f,
+                file_name=img_6600,
+                mime="image/png"
+            )
+
+with colB:
+    if st.button("Download GP 7600 Pay Matrix"):
+        img_7600 = generate_pay_matrix_image(7600)
+        with open(img_7600, "rb") as f:
+            st.download_button(
+                "⬇️ Download GP 7600 Image",
+                f,
+                file_name=img_7600,
+                mime="image/png"
+            )
+
+
